@@ -12,9 +12,10 @@
 
 import random
 import numpy as np
+import spiel
 
 # Q-Learning-Agent
-class QLearningAgent(Spieler):
+class QLearningAgent(spiel.Spieler):
     def __init__(self, name, alpha=0.1, gamma=0.9, epsilon=0.1):
         super().__init__(name)
         self.q_tabelle = {}  # {(zustand, aktion): wert}
