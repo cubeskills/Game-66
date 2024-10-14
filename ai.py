@@ -65,10 +65,10 @@ def trainiere_ki(episoden):
         agent1.neues_spiel()
         agent2.neues_spiel()
 
-        spiel = SechsundsechzigSpiel(agent1, agent2)
-        spiel.spiele_runde()
+        sitzung = spiel.SechsundsechzigSpiel(agent1, agent2)
+        sitzung.spiele_runde()
 
-        gewinner = spiel.spiel_beenden()
+        gewinner = sitzung.spiel_beenden()
         if gewinner == agent1:
             belohnung1 = 1
             belohnung2 = -1
@@ -92,11 +92,11 @@ def trainiere_ki(episoden):
     return agent1
 
 def simulate(ki_agent,idx = 0):
-    mensch = Spieler("Spieler")
+    mensch = spiel.Spieler("Spieler")
     ki_agent.name = "KI"
     ki_agent.neues_spiel()
 
-    spiel = SechsundsechzigSpiel(ki_agent,mensch)
+    spiel = spiel.SechsundsechzigSpiel(ki_agent,mensch)
 
     while mensch.hand and ki_agent.hand:
         if spiel.aktueller_starter == mensch:
@@ -174,17 +174,17 @@ def simulate(ki_agent,idx = 0):
         return -1
 # Funktion zum Spielen gegen die KI
 def spiele_gegen_ki(ki_agent):
-    mensch = Spieler("Spieler")
+    mensch = spiel.Spieler("Spieler")
     ki_agent.name = "KI"
     ki_agent.neues_spiel()
 
-    spiel = SechsundsechzigSpiel(mensch, ki_agent)
+    sitzung = spiel.SechsundsechzigSpiel(mensch, ki_agent)
 
     while mensch.hand and ki_agent.hand:
-        if spiel.aktueller_starter == mensch:
+        if sitzung.aktueller_starter == mensch:
             # Mensch spielt zuerst
             print(f"\nDeine Hand: {mensch.hand}")
-            print(f"Trumpf: {spiel.trumpfkarte}")
+            print(f"Trumpf: {sitzung.trumpfkarte}")
             gueltige_eingabe = False
             while not gueltige_eingabe:
                 try:
@@ -210,7 +210,7 @@ def spiele_gegen_ki(ki_agent):
 
             # Mensch reagiert
             print(f"Deine Hand: {mensch.hand}")
-            print(f"Trumpf: {spiel.trumpfkarte}")
+            print(f"Trumpf: {sitzung.trumpfkarte}")
             gueltige_eingabe = False
             while not gueltige_eingabe:
                 try:
@@ -225,7 +225,7 @@ def spiele_gegen_ki(ki_agent):
             mensch.spiele_karte(mensch_karte)
 
         # Bestimme den Gewinner des Stichs
-        gewinner = spiel.bestimme_gewinner_des_stichs(mensch_karte, ki_karte)
+        gewinner = sitzung.bestimme_gewinner_des_stichs(mensch_karte, ki_karte)
         gewinner.addiere_stich([mensch_karte, ki_karte])
         print(f"{gewinner.name} gewinnt den Stich.")
 
@@ -237,13 +237,13 @@ def spiele_gegen_ki(ki_agent):
         elif ki_punkte >= 66:
             print("Die KI hat gewonnen!")
             break 
-        if spiel.deck.karten:
-            gewinner.ziehe_karten(spiel.deck)
+        if sitzung.deck.karten:
+            gewinner.ziehe_karten(sitzung.deck)
             verlierer = mensch if gewinner != mensch else ki_agent
-            verlierer.ziehe_karten(spiel.deck)
+            verlierer.ziehe_karten(sitzung.deck)
 
         # Nächster Starter ist der Gewinner
-        spiel.aktueller_starter = gewinner
+        sitzung.aktueller_starter = gewinner
 
     # Spiel beenden und Gewinner bestimmen
     mensch_punkte = mensch.berechne_punkte()
