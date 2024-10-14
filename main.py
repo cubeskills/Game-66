@@ -20,7 +20,7 @@ ja kann ich
 """
 
 
-
+import test
 import random
 import numpy as np
 
@@ -398,6 +398,7 @@ def spiele_gegen_ki(ki_agent):
 
 # Hauptprogramm
 if __name__ == "__main__":
+    """
     # Training der KI
     trainierter_agent = trainiere_ki(10000)
 
@@ -425,3 +426,9 @@ if __name__ == "__main__":
     print(f"Ki won {ki_games} games")
     print(f"Ki draw {drawn_games} games")
     print(f"Ki lost {lost_games} games")
+
+    import test
+
+    """
+    
+    print_Hallo()
