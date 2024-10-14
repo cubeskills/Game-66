@@ -1,246 +1,168 @@
 import random
 import numpy as np
-import spiel
+import game
 
-# Q-Learning-Agent
-class QLearningAgent(spiel.Spieler):
+# Q-Learning Agent
+class QLearningAgent(game.Player):
     def __init__(self, name, alpha=0.1, gamma=0.9, epsilon=0.1):
         super().__init__(name)
-        self.q_tabelle = {}  # {(zustand, aktion): wert}
-        self.alpha = alpha  # Lernrate
-        self.gamma = gamma  # Diskontfaktor
-        self.epsilon = epsilon  # Explorationsrate
-        self.zustand_aktion_verlauf = []
+        self.q_table = {}  # {(state, action): value}
+        self.alpha = alpha  # Learning rate
+        self.gamma = gamma  # Discount factor
+        self.epsilon = epsilon  # Exploration rate
+        self.state_action_history = []
 
-    def neues_spiel(self):
-        super().neues_spiel()
-        self.zustand_aktion_verlauf = []
+    def new_game(self):
+        super().new_game()
+        self.state_action_history = []
 
-    def zustand_als_hash(self):
-        # Vereinfachte Zustandsrepräsentation
-        hand_hash = tuple(sorted([f"{karte.farbe}-{karte.wert}" for karte in self.hand]))
+    def state_as_hash(self):
+        # Simplified state representation
+        hand_hash = tuple(sorted([f"{card.suit}-{card.value}" for card in self.hand]))
         return hand_hash
 
-    def waehle_karte(self, aktuelle_karte=None):
-        zustand = self.zustand_als_hash()
-        gueltige_karten = self.hand  # In einer vollständigen Implementierung sollten nur gültige Karten berücksichtigt werden
+    def choose_card(self, current_card=None):
+        state = self.state_as_hash()
+        valid_cards = self.hand  # In a full implementation, only valid cards should be considered
         if np.random.rand() < self.epsilon:
             # Exploration
-            aktion = random.choice(gueltige_karten)
+            action = random.choice(valid_cards)
         else:
             # Exploitation
-            q_werte = [self.q_tabelle.get((zustand, karte.wert + karte.farbe), 0) for karte in gueltige_karten]
-            max_q = max(q_werte)
-            beste_karten = [karte for karte, q in zip(gueltige_karten, q_werte) if q == max_q]
-            aktion = random.choice(beste_karten)
-        self.zustand_aktion_verlauf.append((zustand, aktion))
-        return aktion
+            q_values = [self.q_table.get((state, card.value + card.suit), 0) for card in valid_cards]
+            max_q = max(q_values)
+            best_cards = [card for card, q in zip(valid_cards, q_values) if q == max_q]
+            action = random.choice(best_cards)
+        self.state_action_history.append((state, action))
+        return action
 
-    def lernen(self, belohnung):
-        for zustand, aktion in reversed(self.zustand_aktion_verlauf):
-            altes_q = self.q_tabelle.get((zustand, aktion.wert + aktion.farbe), 0)
-            neues_q = altes_q + self.alpha * (belohnung - altes_q)
-            self.q_tabelle[(zustand, aktion.wert + aktion.farbe)] = neues_q
-            belohnung *= self.gamma  # Diskontfaktor anwenden
+    def play_card(self, card):
+        super().play_card(card)
 
-# Trainingsfunktion
-def trainiere_ki(episoden):
+    def learn(self, reward):
+        for state, action in reversed(self.state_action_history):
+            old_q = self.q_table.get((state, action.value + action.suit), 0)
+            new_q = old_q + self.alpha * (reward - old_q)
+            self.q_table[(state, action.value + action.suit)] = new_q
+            reward *= self.gamma  # Apply discount factor
+
+# Training function
+def train_ai(episodes):
     agent1 = QLearningAgent("Agent 1")
     agent2 = QLearningAgent("Agent 2")
 
-    for episode in range(episoden):
-        # Initialisiere die Agenten für jede Episode
-        agent1.neues_spiel()
-        agent2.neues_spiel()
+    for episode in range(episodes):
+        # Initialize agents for each episode
+        agent1.new_game()
+        agent2.new_game()
 
-        sitzung = spiel.SechsundsechzigSpiel(agent1, agent2)
-        sitzung.spiele_runde()
+        session = game.SixtySixGame(agent1, agent2)
+        session.play_round()
 
-        gewinner = sitzung.spiel_beenden()
-        if gewinner == agent1:
-            belohnung1 = 1
-            belohnung2 = -1
-        elif gewinner == agent2:
-            belohnung1 = -1
-            belohnung2 = 1
+        winner = session.end_game()
+        if winner == agent1:
+            reward1 = 1
+            reward2 = -1
+        elif winner == agent2:
+            reward1 = -1
+            reward2 = 1
         else:
-            belohnung1 = belohnung2 = 0
+            reward1 = reward2 = 0
 
-        # Aktualisiere Q-Werte für beide Agenten
-        agent1.lernen(belohnung1)
-        agent2.lernen(belohnung2)
+        # Update Q-values for both agents
+        agent1.learn(reward1)
+        agent2.learn(reward2)
 
-        # Optional: Reduziere epsilon, um die Exploration zu verringern
+        # Optionally: Reduce epsilon to decrease exploration
         agent1.epsilon = max(0.01, agent1.epsilon * 0.995)
         agent2.epsilon = max(0.01, agent2.epsilon * 0.995)
 
         if (episode + 1) % 100 == 0:
-            print(f"Episode {episode+1}/{episoden} abgeschlossen.")
+            print(f"Episode {episode+1}/{episodes} completed.")
 
     return agent1
 
-def simulate(ki_agent,idx = 0):
-    mensch = spiel.Spieler("Spieler")
-    ki_agent.name = "KI"
-    ki_agent.neues_spiel()
+# Function to play against the AI
+def play_against_ai(ai_agent):
+    player = game.Player("Player")
+    ai_agent.name = "AI"
+    ai_agent.new_game()
 
-    spiel = spiel.SechsundsechzigSpiel(ki_agent,mensch)
+    session = game.SixtySixGame(player, ai_agent)
 
-    while mensch.hand and ki_agent.hand:
-        if spiel.aktueller_starter == mensch:
-            # Mensch spielt zuerst
-            gueltige_eingabe = False
-            while not gueltige_eingabe:
-                if idx == 0:
-                    index = 0
-                    mensch_karte = mensch.hand[index]
-                    gueltige_eingabe = True
-                else:
-                    try:
-                        index = int(input("Wähle eine Karte zum Spielen (Index): "))
-                        if 0 <= index < len(mensch.hand):
-                            mensch_karte = mensch.hand[index]
-                            gueltige_eingabe = True
-                    except ValueError:
-                        pass
-            mensch.spiele_karte(mensch_karte)
-
-            # KI reagiert
-            ki_karte = ki_agent.waehle_karte(aktuelle_karte=mensch_karte)
-            ki_agent.spiele_karte(ki_karte)
-        else:
-            # KI spielt zuerst
-            ki_karte = ki_agent.waehle_karte()
-            ki_agent.spiele_karte(ki_karte)
-
-            # Mensch reagiert
-            gueltige_eingabe = False
-            while not gueltige_eingabe:
-                if idx == 0:
-                    index = 0
-                    mensch_karte = mensch.hand[index]
-                    gueltige_eingabe = True
-                else:
-                    try:
-                        index = int(input("Wähle eine Karte zum Spielen (Index): "))
-                        if 0 <= index < len(mensch.hand):
-                            mensch_karte = mensch.hand[index]
-                            gueltige_eingabe = True
-                    except ValueError:
-                        pass
-            mensch.spiele_karte(mensch_karte)
-
-        # Bestimme den Gewinner des Stichs
-        gewinner = spiel.bestimme_gewinner_des_stichs(mensch_karte, ki_karte)
-        gewinner.addiere_stich([mensch_karte, ki_karte])
-
-        mensch_punkte = mensch.berechne_punkte()
-        ki_punkte = ki_agent.berechne_punkte()
-        if mensch_punkte >= 66:
-            return 1
-        elif ki_punkte >= 66:
-            return 0
-        # Gewinner zieht zuerst eine Karte
-        if spiel.deck.karten:
-            gewinner.ziehe_karten(spiel.deck)
-            verlierer = mensch if gewinner != mensch else ki_agent
-            verlierer.ziehe_karten(spiel.deck)
-
-        # Nächster Starter ist der Gewinner
-        spiel.aktueller_starter = gewinner
-
-    # Spiel beenden und Gewinner bestimmen
-    mensch_punkte = mensch.berechne_punkte()
-    ki_punkte = ki_agent.berechne_punkte()
-    print(f"\nDeine Punkte: {mensch_punkte}")
-    print(f"KI-Punkte: {ki_punkte}")
-    if mensch_punkte >= 66:
-        return 1
-    elif ki_punkte >= 66:
-        return 0
-    else:
-        return -1
-# Funktion zum Spielen gegen die KI
-def spiele_gegen_ki(ki_agent):
-    mensch = spiel.Spieler("Spieler")
-    ki_agent.name = "KI"
-    ki_agent.neues_spiel()
-
-    sitzung = spiel.SechsundsechzigSpiel(mensch, ki_agent)
-
-    while mensch.hand and ki_agent.hand:
-        if sitzung.aktueller_starter == mensch:
-            # Mensch spielt zuerst
-            print(f"\nDeine Hand: {mensch.hand}")
-            print(f"Trumpf: {sitzung.trumpfkarte}")
-            gueltige_eingabe = False
-            while not gueltige_eingabe:
+    while player.hand and ai_agent.hand:
+        if session.current_starter == player:
+            # Player plays first
+            print(f"\nYour Hand: {player.hand}")
+            print(f"Trump: {session.trump_card}")
+            valid_input = False
+            while not valid_input:
                 try:
-                    index = int(input("Wähle eine Karte zum Spielen (Index): "))
-                    if 0 <= index < len(mensch.hand):
-                        mensch_karte = mensch.hand[index]
-                        gueltige_eingabe = True
+                    index = int(input("Choose a card to play (Index): "))
+                    if 0 <= index < len(player.hand):
+                        player_card = player.hand[index]
+                        valid_input = True
                     else:
-                        print("Ungültiger Index. Bitte erneut versuchen.")
+                        print("Invalid index. Please try again.")
                 except ValueError:
-                    print("Bitte eine Zahl eingeben.")
-            mensch.spiele_karte(mensch_karte)
+                    print("Please enter a number.")
+            player.play_card(player_card)
 
-            # KI reagiert
-            ki_karte = ki_agent.waehle_karte(aktuelle_karte=mensch_karte)
-            ki_agent.spiele_karte(ki_karte)
-            print(f"Die KI spielt: {ki_karte}")
+            # AI responds
+            ai_card = ai_agent.choose_card(current_card=player_card)
+            ai_agent.play_card(ai_card)
+            print(f"The AI plays: {ai_card}")
         else:
-            # KI spielt zuerst
-            ki_karte = ki_agent.waehle_karte()
-            ki_agent.spiele_karte(ki_karte)
-            print(f"\nDie KI spielt: {ki_karte}")
+            # AI plays first
+            ai_card = ai_agent.choose_card()
+            ai_agent.play_card(ai_card)
+            print(f"\nThe AI plays: {ai_card}")
 
-            # Mensch reagiert
-            print(f"Deine Hand: {mensch.hand}")
-            print(f"Trumpf: {sitzung.trumpfkarte}")
-            gueltige_eingabe = False
-            while not gueltige_eingabe:
+            # Player responds
+            print(f"Your Hand: {player.hand}")
+            print(f"Trump: {session.trump_card}")
+            valid_input = False
+            while not valid_input:
                 try:
-                    index = int(input("Wähle eine Karte zum Spielen (Index): "))
-                    if 0 <= index < len(mensch.hand):
-                        mensch_karte = mensch.hand[index]
-                        gueltige_eingabe = True
+                    index = int(input("Choose a card to play (Index): "))
+                    if 0 <= index < len(player.hand):
+                        player_card = player.hand[index]
+                        valid_input = True
                     else:
-                        print("Ungültiger Index. Bitte erneut versuchen.")
+                        print("Invalid index. Please try again.")
                 except ValueError:
-                    print("Bitte eine Zahl eingeben.")
-            mensch.spiele_karte(mensch_karte)
+                    print("Please enter a number.")
+            player.play_card(player_card)
 
-        # Bestimme den Gewinner des Stichs
-        gewinner = sitzung.bestimme_gewinner_des_stichs(mensch_karte, ki_karte)
-        gewinner.addiere_stich([mensch_karte, ki_karte])
-        print(f"{gewinner.name} gewinnt den Stich.")
+        # Determine the winner of the trick
+        winner = session.determine_trick_winner(player_card, ai_card)
+        winner.add_trick([player_card, ai_card])
+        print(f"{winner.name} wins the trick.")
 
-        mensch_punkte = mensch.berechne_punkte()
-        ki_punkte = ki_agent.berechne_punkte()
-        if mensch_punkte >= 66:
-            print("Du hast gewonnen!")
+        player_points = player.calculate_points()
+        ai_points = ai_agent.calculate_points()
+        if player_points >= 66:
+            print("You have won!")
             break
-        elif ki_punkte >= 66:
-            print("Die KI hat gewonnen!")
-            break 
-        if sitzung.deck.karten:
-            gewinner.ziehe_karten(sitzung.deck)
-            verlierer = mensch if gewinner != mensch else ki_agent
-            verlierer.ziehe_karten(sitzung.deck)
+        elif ai_points >= 66:
+            print("The AI has won!")
+            break
+        if session.deck.cards:
+            winner.draw_cards(session.deck)
+            loser = player if winner != player else ai_agent
+            loser.draw_cards(session.deck)
 
-        # Nächster Starter ist der Gewinner
-        sitzung.aktueller_starter = gewinner
+        # Next starter is the winner
+        session.current_starter = winner
 
-    # Spiel beenden und Gewinner bestimmen
-    mensch_punkte = mensch.berechne_punkte()
-    ki_punkte = ki_agent.berechne_punkte()
-    print(f"\nDeine Punkte: {mensch_punkte}")
-    print(f"KI-Punkte: {ki_punkte}")
-    if mensch_punkte >= 66:
-        print("Du hast gewonnen!")
-    elif ki_punkte >= 66:
-        print("Die KI hat gewonnen!")
+    # End game and determine winner
+    player_points = player.calculate_points()
+    ai_points = ai_agent.calculate_points()
+    print(f"\nYour Points: {player_points}")
+    print(f"AI Points: {ai_points}")
+    if player_points >= 66:
+        print("You have won!")
+    elif ai_points >= 66:
+        print("The AI has won!")
     else:
-        print("Keiner hat 66 Punkte erreicht.")
+        print("No one reached 66 points.")
