@@ -34,11 +34,17 @@ class Spieler:
         self.hand = []
         self.stiche = []
         self.punkte = 0
+        self.satzpunkte = 0             #Attribut Satzpunkte hinzugefügt
 
     def neues_spiel(self):
         self.hand = []
         self.stiche = []
         self.punkte = 0
+
+    #Neuer Satz erstellen
+    def neuer_satz(self):
+        self.neues_spiel()
+        self.satzpunkte = 0
 
     def ziehe_karten(self, deck, anzahl=1):
         for _ in range(anzahl):
@@ -56,6 +62,10 @@ class Spieler:
     def berechne_punkte(self):
         self.punkte = sum(karte.punkte for karte in self.stiche)
         return self.punkte
+
+    # Berechnen von satzpunkten
+    def berechne_satzpunkte(self, wert):
+            self._satzpunkte += wert
 
     def __repr__(self):
         return f"{self.name} - Punkte: {self.punkte}"
@@ -123,8 +133,20 @@ class SechsundsechzigSpiel:
         punkte1 = self.spieler1.berechne_punkte()
         punkte2 = self.spieler2.berechne_punkte()
         if punkte1 >= 66:
+            self.spieler1.set_satzpunkte(1)
             return self.spieler1
         elif punkte2 >= 66:
+            self.spieler1.set_satzpunkte(1)
+            return self.spieler2
+        else:
+            return None
+        
+    def satz_beenden(self):
+        punkte1 = self.spieler1.berechne_punkte()
+        punkte2 = self.spieler2.berechne_punkte()
+        if punkte1 >= 7:
+            return self.spieler1
+        elif punkte2 >= 7:
             return self.spieler2
         else:
             return None
