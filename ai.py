@@ -1,9 +1,9 @@
 import random
 import numpy as np
-import game
+import spiel
 
 # Q-Learning Agent
-class QLearningAgent(game.Player):
+class QLearningAgent(spiel.Player):
     def __init__(self, name, alpha=0.1, gamma=0.9, epsilon=0.1):
         super().__init__(name)
         self.q_table = {}  # {(state, action): value}
@@ -56,7 +56,7 @@ def train_ai(episodes):
         agent1.new_game()
         agent2.new_game()
 
-        session = game.SixtySixGame(agent1, agent2)
+        session = spiel.SixtySixGame(agent1, agent2)
         session.play_round()
 
         winner = session.end_game()
@@ -84,11 +84,11 @@ def train_ai(episodes):
 
 # Function to play against the AI
 def play_against_ai(ai_agent):
-    player = game.Player("Player")
+    player = spiel.Player("Player")
     ai_agent.name = "AI"
     ai_agent.new_game()
 
-    session = game.SixtySixGame(player, ai_agent)
+    session = spiel.SixtySixGame(player, ai_agent)
 
     while player.hand and ai_agent.hand:
         if session.current_starter == player:

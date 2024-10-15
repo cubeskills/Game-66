@@ -4,7 +4,7 @@ test
 """
 # Hauptprogramm
 if __name__ == "__main__":
-   ki_agent = ai.trainiere_ki(10000)
+   ki_agent = ai.train_ai(10000)
 
-   ai.spiele_gegen_ki(ki_agent)
+   ai.play_against_ai(ki_agent)
    
