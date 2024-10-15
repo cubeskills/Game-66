@@ -34,12 +34,16 @@ class Spieler:
         self.hand = []
         self.stiche = []
         self.punkte = 0
-        self.satzpunkte = 0             #Attribut Satzpunkte hinzugefügt
+        self.satzpunkte = 0 
+        self.stich_vor_decken = False
+        self.gedeckt = False
 
     def neues_spiel(self):
         self.hand = []
         self.stiche = []
         self.punkte = 0
+        self.stich_vor_decken = False
+        self.gedeckt = False
 
     #Neuer Satz erstellen
     def neuer_satz(self):
@@ -63,9 +67,39 @@ class Spieler:
         self.punkte = sum(karte.punkte for karte in self.stiche)
         return self.punkte
 
-    # Berechnen von satzpunkten
-    def berechne_satzpunkte(self, wert):
-            self._satzpunkte += wert
+
+
+
+    #bestimmen der Satzpunkte
+    def bestimme_satzpunkte(self, gewinner, verlierer):
+        """Bestimme die Spielpunkte nach den Spielregeln von '66'"""
+        if gewinner.gedeckt:  # Wenn gedeckt wurde
+            if gewinner.kartenpunkte >= 66:
+                if verlierer.kartenpunkte >= 33:
+                    return 1 # 1 Spielpunkt für den Gewinner
+                elif len(verlierer.stiche) == 0:
+                    return 3  # 3 Spielpunkte, weil Gegner keinen Stich (Schwarz) gemacht hat
+                else:
+                    return 2  # 2 Spielpunkte, weil Gegner Schneider ist (unter 33 Punkte)
+            else:
+                if len(verlierer.stiche) == 0 and verlierer.stich_vor_decken == True:
+                    return 3  # Verlierer gewinnt 3 Spielpunkte, da Gewinner nicht 66 Punkte erreicht hat und Verlierer keine Stiche gemacht hat
+                else:
+                    return 2  # Verlierer gewinnt 2 Spielpunkte, da Gewinner nicht 66 Punkte erreicht hat
+        else:  # Wenn nicht gedeckt wurde
+            if gewinner.kartenpunkte >= 66:
+                if verlierer.kartenpunkte >= 33:
+                    return 1  # 1 Spielpunkt für den Gewinner
+                elif len(verlierer.stiche) == 0:
+                    return 3  # 3 Spielpunkte, weil Gegner Schwarz ist
+                else:
+                    return 2  # 2 Spielpunkte, weil Gegner Schneider ist (unter 33 Punkte)
+        #Bei unentschieden beide 65 zu 65
+        return 0    
+        
+    def berechne_satzpunkte(self, wert=0):
+        self.satzpunkte += wert
+        return self.satzpunkte
 
     def __repr__(self):
         return f"{self.name} - Punkte: {self.punkte}"
@@ -129,24 +163,40 @@ class SechsundsechzigSpiel:
             # Nächster Starter ist der Gewinner
             self.aktueller_starter = gewinner
 
+    #Bestimmung der Satzpunkte methode hinzufügen
     def spiel_beenden(self):
         punkte1 = self.spieler1.berechne_punkte()
         punkte2 = self.spieler2.berechne_punkte()
+        #Bestimme Gewinner
+        #Spieler 1 erreicht zuerst 66 Punkte
         if punkte1 >= 66:
-            self.spieler1.set_satzpunkte(1)
+            self.spieler1.berechne_satzpunkte(self.bestimme_satzpunkte(self.spieler1, self.spieler2))
             return self.spieler1
+        #Spieler 2 erreicht zuerst 66 Punkte
         elif punkte2 >= 66:
-            self.spieler1.set_satzpunkte(1)
+            self.spieler2.berechne_satzpunkte(self.bestimme_satzpunkte(self.spieler2, self.spieler1))
             return self.spieler2
+        #Spieler haben keine Karten mehr auf der Hand
+        elif(len(self.spieler1.hand) == 0):
+            #Spieler1 deckt und hat keine 66 Punkte --> Spieler2 gewinnt
+            if(self.spieler1.decken == True):
+                self.spieler2.berechne_satzpunkte(self.bestimme_satzpunkte(self.spieler1, self.spieler2))
+                return self.spieler2
+            #Spieler2 deckt und hat keine 66 Punkte --> Spieler1 gewinnt
+            elif(self.spieler2.decken == True):
+                self.spieler1.berechne_satzpunkte(self.bestimme_satzpunkte(self.spieler2, self.spieler1))
+                return self.spieler1
         else:
             return None
         
     def satz_beenden(self):
-        punkte1 = self.spieler1.berechne_punkte()
-        punkte2 = self.spieler2.berechne_punkte()
-        if punkte1 >= 7:
+        satzpunkte1 = self.spieler1.satzpunkte()
+        satzpunkte2 = self.spieler2.satzpunkte()
+        if satzpunkte1 >= 7:
             return self.spieler1
-        elif punkte2 >= 7:
+        elif satzpunkte2 >= 7:
             return self.spieler2
         else:
             return None
+        
+    
