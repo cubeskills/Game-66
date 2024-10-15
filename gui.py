@@ -1,205 +1,192 @@
-import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
-import game
-import ai
+import sys
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QLabel, QHBoxLayout, QVBoxLayout,
+    QPushButton, QMessageBox
+)
+from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtCore import Qt
 import os
 
-class SixtySixGUI:
-    def __init__(self, master):
-        self.master = master
-        self.master.title("Sixty-six")
-        self.master.geometry("1000x800")  # Enlarged window size
+# Import your game logic
+import spiel
+import ai
 
+class SixtySixGUI(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Sixty-Six Card Game")
         self.game = None
-        self.player = game.Player("Player")
-        self.ai_agent = ai.QLearningAgent("AI")
-
-        # Dictionary for card images
-        self.card_images = {}
-        self.load_card_images()
-
-        self.create_widgets()
+        self.setup_ui()
         self.start_new_game()
 
-    def load_card_images(self):
-        # Load all card images into a dictionary
-        image_folder = 'Images'  # Folder where the images are stored
-        for filename in os.listdir(image_folder):
-            if filename.endswith('.png'):
-                card_name = filename[:-4]  # Remove the .png extension
-                image_path = os.path.join(image_folder, filename)
-                image = Image.open(image_path)
-                # Use the new resampling mode LANCZOS instead of ANTIALIAS
-                image = image.resize((100, 150), Image.Resampling.LANCZOS)
-                self.card_images[card_name] = ImageTk.PhotoImage(image)
+    def setup_ui(self):
+        # Main layout
+        main_layout = QVBoxLayout()
 
-    def create_widgets(self):
-        # Create frames
-        self.top_frame = tk.Frame(self.master)
-        self.top_frame.pack(pady=10)
+        # Top layout: Trump card and AI's hand
+        top_layout = QHBoxLayout()
+        self.trump_card_label = QLabel()
+        top_layout.addWidget(QLabel("Trump Card:"))
+        top_layout.addWidget(self.trump_card_label)
+        self.ai_hand_layout = QHBoxLayout()
+        top_layout.addWidget(QLabel("AI's Hand:"))
+        top_layout.addLayout(self.ai_hand_layout)
 
-        self.middle_frame = tk.Frame(self.master)
-        self.middle_frame.pack(pady=10)
+        # Middle layout: Played cards area
+        middle_layout = QHBoxLayout()
+        self.played_cards_layout = QHBoxLayout()
+        middle_layout.addLayout(self.played_cards_layout)
 
-        self.bottom_frame = tk.Frame(self.master)
-        self.bottom_frame.pack(pady=10)
+        # Bottom layout: Player's hand
+        bottom_layout = QHBoxLayout()
+        bottom_layout.addWidget(QLabel("Your Hand:"))
+        self.player_hand_layout = QHBoxLayout()
+        bottom_layout.addLayout(self.player_hand_layout)
 
-        # Trump card
-        self.trump_label = tk.Label(self.top_frame, text="Trump: ")
-        self.trump_label.pack(side=tk.LEFT)
+        # Assemble layouts
+        main_layout.addLayout(top_layout)
+        main_layout.addLayout(middle_layout)
+        main_layout.addLayout(bottom_layout)
+        self.setLayout(main_layout)
 
-        # AI tricks
-        self.ai_tricks_label = tk.Label(self.top_frame, text="AI Tricks: 0")
-        self.ai_tricks_label.pack(side=tk.RIGHT)
-
-        # Game field
-        self.game_field_canvas = tk.Canvas(self.middle_frame, width=800, height=200)
-        self.game_field_canvas.pack()
-
-        # Player hand
-        self.hand_label = tk.Label(self.bottom_frame, text="Your Hand:")
-        self.hand_label.pack()
-
-        self.hand_buttons = []
-
-        # Start new game
-        self.new_game_button = tk.Button(self.master, text="New Game", command=self.start_new_game)
-        self.new_game_button.pack(pady=5)
+    def load_card_image(self, card):
+        # card is an instance of Card
+        filename = f"{card.value.lower()}_{card.suit}.gif"
+        path = os.path.join('Images', filename)
+        pixmap = QPixmap(path)
+        if pixmap.isNull():
+            print(f"Failed to load image: {path}")
+            # Optionally use a placeholder image
+        return pixmap
 
     def start_new_game(self):
-        self.player.new_game()
-        self.ai_agent.new_game()
-        self.game = game.SixtySixGame(self.player, self.ai_agent)
-        self.update_trump()
-        self.update_hand()
-        self.update_tricks()
-        self.game_field_canvas.delete("all")
-        self.master.update()
+        # Initialize players
+        self.player = spiel.Player("Player")
+        self.ai_agent = ai.QLearningAgent("AI")
+        self.ai_agent.epsilon = 0  # Deterministic AI for testing
 
-        # AI sometimes starts
-        if self.game.current_starter == self.ai_agent:
-            self.master.after(1000, self.ai_turn)
+        # Start the game session
+        self.game = spiel.SixtySixGame(self.player, self.ai_agent)
 
-    def update_trump(self):
-        trump_card = self.game.trump_card
-        card_image = self.get_card_image(trump_card)
-        if hasattr(self, 'trump_image_label'):
-            self.trump_image_label.destroy()
-        self.trump_image_label = tk.Label(self.top_frame, image=card_image)
-        self.trump_image_label.image = card_image  # Save reference
-        self.trump_image_label.pack(side=tk.LEFT)
+        # Update GUI elements
+        self.update_trump_card()
+        self.update_ai_hand()
+        self.update_player_hand()
+        self.update_played_cards()
 
-    def get_card_image(self, card):
-        # Convert the card object to the image name
-        card_name = str(card).lower().replace(' ', '_')
-        return self.card_images.get(card_name, None)
+    def update_trump_card(self):
+        pixmap = self.load_card_image(self.game.trump_card)
+        self.trump_card_label.setPixmap(pixmap.scaled(80, 120, Qt.KeepAspectRatio))
 
-    def update_hand(self):
-        # Remove old buttons
-        for btn in self.hand_buttons:
-            btn.destroy()
-        self.hand_buttons = []
+    def update_ai_hand(self):
+        # Clear existing cards
+        for i in reversed(range(self.ai_hand_layout.count())):
+            widget = self.ai_hand_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+        # Display card backs
+        for _ in self.ai_agent.hand:
+            card_back_label = QLabel()
+            pixmap = QPixmap(os.path.join('Images', 'back.gif'))
+            card_back_label.setPixmap(pixmap.scaled(80, 120, Qt.KeepAspectRatio))
+            self.ai_hand_layout.addWidget(card_back_label)
 
-        # Create new buttons with card images
-        for idx, card in enumerate(self.player.hand):
-            card_image = self.get_card_image(card)
-            btn = tk.Button(self.bottom_frame, image=card_image, command=lambda idx=idx: self.player_turn(idx))
-            btn.image = card_image  # Save reference
-            btn.pack(side=tk.LEFT, padx=5)
-            self.hand_buttons.append(btn)
+    def update_player_hand(self):
+        # Clear existing cards
+        for i in reversed(range(self.player_hand_layout.count())):
+            widget = self.player_hand_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+        # Display player's cards
+        for index, card in enumerate(self.player.hand):
+            card_button = QPushButton()
+            pixmap = self.load_card_image(card)
+            icon = QIcon(pixmap)
+            card_button.setIcon(icon)
+            card_button.setIconSize(pixmap.size())
+            card_button.clicked.connect(lambda checked, idx=index: self.player_card_clicked(idx))
+            self.player_hand_layout.addWidget(card_button)
 
-    def update_tricks(self):
-        self.ai_tricks_label.config(text=f"AI Tricks: {len(self.ai_agent.tricks)}")
+    def update_played_cards(self, player_card=None, ai_card=None):
+        # Clear existing cards
+        for i in reversed(range(self.played_cards_layout.count())):
+            widget = self.played_cards_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+        # Display played cards
+        if player_card:
+            player_label = QLabel("You played:")
+            pixmap = self.load_card_image(player_card)
+            player_card_label = QLabel()
+            player_card_label.setPixmap(pixmap.scaled(80, 120, Qt.KeepAspectRatio))
+            self.played_cards_layout.addWidget(player_label)
+            self.played_cards_layout.addWidget(player_card_label)
+        if ai_card:
+            ai_label = QLabel("AI played:")
+            pixmap = self.load_card_image(ai_card)
+            ai_card_label = QLabel()
+            ai_card_label.setPixmap(pixmap.scaled(80, 120, Qt.KeepAspectRatio))
+            self.played_cards_layout.addWidget(ai_label)
+            self.played_cards_layout.addWidget(ai_card_label)
 
-    def player_turn(self, index):
-        if self.game.current_starter != self.player:
-            messagebox.showinfo("Info", "Please wait for your turn.")
-            return
-
-        player_card = self.player.hand[index]
+    def player_card_clicked(self, card_index):
+        # Player selects a card to play
+        player_card = self.player.hand[card_index]
         self.player.play_card(player_card)
-        self.update_hand()
-        self.game_field_canvas.delete("all")
-
-        # Display player's card
-        player_card_image = self.get_card_image(player_card)
-        self.game_field_canvas.create_image(200, 100, image=player_card_image)
-        self.game_field_canvas.image1 = player_card_image  # Save reference
 
         # AI responds
         ai_card = self.ai_agent.choose_card(current_card=player_card)
         self.ai_agent.play_card(ai_card)
 
-        # Display AI's card
-        ai_card_image = self.get_card_image(ai_card)
-        self.game_field_canvas.create_image(600, 100, image=ai_card_image)
-        self.game_field_canvas.image2 = ai_card_image  # Save reference
+        # Update GUI
+        self.update_player_hand()
+        self.update_ai_hand()
+        self.update_played_cards(player_card=player_card, ai_card=ai_card)
 
-        self.after_move(player_card, ai_card)
-
-    def ai_turn(self):
-        if self.game.current_starter != self.ai_agent:
-            return
-
-        # AI plays first
-        ai_card = self.ai_agent.choose_card()
-        self.ai_agent.play_card(ai_card)
-        self.game_field_canvas.delete("all")
-
-        # Display AI's card
-        ai_card_image = self.get_card_image(ai_card)
-        self.game_field_canvas.create_image(600, 100, image=ai_card_image)
-        self.game_field_canvas.image2 = ai_card_image  # Save reference
-
-        # Activate buttons
-        for btn in self.hand_buttons:
-            btn.config(state=tk.NORMAL)
-
-    def after_move(self, player_card, ai_card):
-        # Determine the winner of the trick
+        # Determine trick winner
         winner = self.game.determine_trick_winner(player_card, ai_card)
         winner.add_trick([player_card, ai_card])
-        self.update_tricks()
+        QMessageBox.information(self, "Trick Result", f"{winner.name} wins the trick.")
 
-        # Winner draws a card first
-        if self.game.deck.cards:
-            winner.draw_cards(self.game.deck)
-            loser = self.player if winner != self.player else self.ai_agent
-            loser.draw_cards(self.game.deck)
-            self.update_hand()
-
-        # Next starter is the winner
-        self.game.current_starter = winner
-
-        # Check for game end
-        if not self.player.hand or not self.ai_agent.hand:
+        # Check for game end or continue
+        if not self.player.hand:
             self.end_game()
-            return
-
-        # Next turn
-        if self.game.current_starter == self.ai_agent:
-            self.master.after(1000, self.ai_turn)
+        else:
+            # Draw new cards if deck isn't empty
+            if self.game.deck.cards:
+                winner.draw_cards(self.game.deck)
+                loser = self.player if winner != self.player else self.ai_agent
+                loser.draw_cards(self.game.deck)
+            # Update hands
+            self.update_player_hand()
+            self.update_ai_hand()
+            # Set next starter
+            self.game.current_starter = winner
 
     def end_game(self):
         player_points = self.player.calculate_points()
         ai_points = self.ai_agent.calculate_points()
+        result_message = f"Your Points: {player_points}\nAI Points: {ai_points}\n"
 
         if player_points >= 66:
-            messagebox.showinfo("Game Over", f"You have won!\nYour Points: {player_points}\nAI Points: {ai_points}")
+            result_message += "You have won!"
         elif ai_points >= 66:
-            messagebox.showinfo("Game Over", f"The AI has won!\nYour Points: {player_points}\nAI Points: {ai_points}")
+            result_message += "The AI has won!"
         else:
-            messagebox.showinfo("Game Over", f"Draw.\nYour Points: {player_points}\nAI Points: {ai_points}")
+            result_message += "No one reached 66 points."
 
-        # Start new game
-        self.start_new_game()
+        QMessageBox.information(self, "Game Over", result_message)
 
-def main():
-    root = tk.Tk()
-    app = SixtySixGUI(root)
-    root.mainloop()
+        # Offer to play again
+        reply = QMessageBox.question(self, 'New Game', 'Do you want to play again?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.start_new_game()
+        else:
+            self.close()
 
-if __name__ == "__main__":
-    main()
-
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = SixtySixGUI()
+    window.show()
+    sys.exit(app.exec_())
