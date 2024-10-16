@@ -17,8 +17,8 @@ def step_impl(context, s1_p, s2_p):
     context.player1.points = int(s1_p)
     context.player2.points = int(s2_p)
 
-@when('Spieler1 {s1_p} Punkte und Spieler2 {s2_p} Stiche hat')
-def step_impl(context, s1_p, s2_p):
+@when('Spieler1 {s1_p} Punkte und Spieler2 0 Stiche hat')
+def step_impl(context, s1_p):
     context.player1.points = int(s1_p)
 
 @when('Spieler1 gedeckt hat')
