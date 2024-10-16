@@ -85,7 +85,7 @@ class Player:
                     return 2  # Loser gains 2 game points because the winner didn't reach 66 points
         else:  # If the deck is not closed
             if winner.points >= 66:
-                if loser.points >= 33:
+                if loser.points >= 33 and loser.closed == False:
                     return 1  # 1 game point for the winner
                 elif len(loser.tricks) == 0:
                     return 3  # 3 game points because the opponent is Black
