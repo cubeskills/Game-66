@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt
 import os
 
 # Import your game logic
-import spiel
+import game
 import ai
 
 class SixtySixGUI(QWidget):
@@ -61,12 +61,12 @@ class SixtySixGUI(QWidget):
 
     def start_new_game(self):
         # Initialize players
-        self.player = spiel.Player("Player")
+        self.player = game.Player("Player")
         self.ai_agent = ai.QLearningAgent("AI")
         self.ai_agent.epsilon = 0  # Deterministic AI for testing
 
         # Start the game session
-        self.game = spiel.SixtySixGame(self.player, self.ai_agent)
+        self.game = game.SixtySixGame(self.player, self.ai_agent)
 
         # Update GUI elements
         self.update_trump_card()
