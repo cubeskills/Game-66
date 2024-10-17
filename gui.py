@@ -405,9 +405,7 @@ class SixtySixGUI(QWidget):
     def start_new_game(self):
         # Initialize players
         self.player = game.Player("Player")
-        self.ai_agent = ai.QLearningAgent("AI")
-        self.ai_agent.epsilon = 0  # Deterministic AI for testing
-
+        self.ai_agent = ai.train_ai(10000)
         # Start the game session
         self.game = game.SixtySixGame(self.player, self.ai_agent)
         self.last_player_card = None

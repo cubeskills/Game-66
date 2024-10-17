@@ -85,7 +85,24 @@ class QLearningAgent(game.Player):
     # Override get_valid_cards from Player class
     def get_valid_cards(self, current_card=None, phase=1, trump=None):
         return super().get_valid_cards(current_card, phase, trump)
+# Random Agent
+class RandomAgent(game.Player):
+    def __init__(self, name):
+        super().__init__(name)
+        self.wants_to_close_deck = False
 
+    def choose_card(self, current_card=None, phase=None, trump=None):
+        valid_cards = self.get_valid_cards(current_card, phase, trump)
+        if valid_cards:
+            return random.choice(valid_cards)
+        else:
+            return None
+
+    def call_close_deck(self):
+        # Entscheidet zufällig, ob er das Deck schließen will (sehr selten)
+        self.wants_to_close_deck = random.random() < 0.01
+        return self.wants_to_close_deck and not self.closed
+    
 # Training function
 def train_ai(episodes):
     agent1 = QLearningAgent("Agent 1")
@@ -127,6 +144,43 @@ def train_ai(episodes):
             print(f"Episode {episode+1}/{episodes} completed.")
 
     return agent1
+# Funktion zum Testen der KI
+def test_ai(ai_agent, n_games=1000):
+    random_agent = RandomAgent("RandomAI")
+    ai_wins = 0
+    random_wins = 0
+    draws = 0
+
+    for _ in range(n_games):
+        # Spieler initialisieren
+        ai_agent.new_game()
+        random_agent.new_game()
+
+        # Neues Spiel starten
+        session = game.SixtySixGame(ai_agent, random_agent)
+        session.play_round()
+
+        # Gewinner bestimmen
+        winner = session.end_game()
+        if winner == ai_agent:
+            ai_wins += 1
+        elif winner == random_agent:
+            random_wins += 1
+        else:
+            draws += 1
+
+    # Gewinnraten berechnen
+    ai_win_rate = (ai_wins / n_games) * 100
+    random_win_rate = (random_wins / n_games) * 100
+    draw_rate = (draws / n_games) * 100
+
+    # Ergebnisse ausgeben
+    print(f"Aus {n_games} Spielen:")
+    print(f"KI Gewinne: {ai_wins} ({ai_win_rate:.2f}%)")
+    print(f"RandomAI Gewinne: {random_wins} ({random_win_rate:.2f}%)")
+    print(f"Unentschieden: {draws} ({draw_rate:.2f}%)")
+
+    return ai_win_rate
 
 # Function to play against the AI
 def play_against_ai(ai_agent):
