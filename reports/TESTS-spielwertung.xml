@@ -1,0 +1,23 @@
+<testsuite name="spielwertung.Spielbewertung" tests="2" errors="0" failures="0" skipped="0" time="0.000709" timestamp="2024-10-16T16:57:04.721966" hostname="powlsmachine"><testcase classname="spielwertung.Spielbewertung" name="Spieler 1 hat 66 Punkte und Spieler 2 hat 33 Punkte" status="passed" time="0.000484"><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: Spieler 1 hat 66 Punkte und Spieler 2 hat 33 Punkte
+    Given Spieler1 spielt gegen Spieler2 ... passed in 0.000s
+    When Spieler1 66 Punkte und Spieler2 33 Punkte hat ... passed in 0.000s
+    Then sollte Spieler1 1 Satzpunkt(e) gewinnen ... passed in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase><testcase classname="spielwertung.Spielbewertung" name="Spieler 1 hat 66 Punkte und Spieler 2 hat 32 Punkte" status="passed" time="0.000225"><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: Spieler 1 hat 66 Punkte und Spieler 2 hat 32 Punkte
+    Given Spieler1 spielt gegen Spieler2 ... passed in 0.000s
+    When Spieler1 66 Punkte und Spieler2 32 Punkte hat ... passed in 0.000s
+    Then sollte Spieler1 2 Satzpunkt(e) gewinnen ... passed in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase></testsuite>
