@@ -34,6 +34,7 @@ class Player:
         self.hand = []
         self.tricks = []
         self.points = 0
+        self.special_points = 0
         self.set_points = 0
         self.trick_before_closing = False
         self.closed = False
@@ -43,6 +44,7 @@ class Player:
         self.hand = []
         self.tricks = []
         self.points = 0
+        self.special_points = 0
         self.trick_before_closing = False
         self.closed = False
         self.wants_to_close_deck = False
@@ -65,11 +67,16 @@ class Player:
 
     def add_trick(self, cards):
         self.tricks.extend(cards)
+        self.check_for_last_trick()
+
+    def check_for_last_trick(self):
+        if len(self.hand) == 0:
+            self.special_points += 10
 
     def calculate_points(self):
-        self.points = sum(card.points for card in self.tricks)
+        self.points = sum(card.points for card in self.tricks) + self.special_points
         return self.points
-
+    
     # Determine set points
     def determine_set_points(self, winner, loser):
         """Determine the game points according to the rules of 'Sixty-Six'"""

@@ -6,16 +6,25 @@ from game import Card
 
 @given('Spieler1 spielt gegen Spieler2')
 def step_impl(context):
-       context.player1 = Player("Spieler 1")
-       context.player2 = Player("Spieler 2")
+        context.player1 = Player("Spieler 1")
+        context.player2 = Player("Spieler 2")
 
-
+#Spieler Punkte +22
 @when('Spieler1 {s1_p} Punkte und Spieler2 {s2_p} Punkte hat')
 def step_impl(context, s1_p, s2_p):
-    context.player1.add_trick([Card('heart', 'ace'), Card('club', 'ace')])
-    context.player2.add_trick([Card('heart', 'ace'), Card('club', 'ace')])
-    context.player1.points = int(s1_p)
-    context.player2.points = int(s2_p)
+        context.player1.add_trick([Card('heart', 'ace'), Card('club', 'ace')])
+        context.player2.add_trick([Card('heart', 'ace'), Card('club', 'ace')])
+        context.player1.points = int(s1_p)
+        context.player2.points = int(s2_p)
+    
+@when('Spieler1 {s1_cv} {s1_cc} spielt und Spieler2 {s2_cv} {s2_cc} spielt')
+def step_impl(context, s1_cv, s1_cc, s2_cv, s2_cc):
+     context.player1.add_trick([Card(s1_cc, s1_cv), Card(s2_cc, s2_cv)])
+     context.player1.calculate_points()
+
+@then('hat Spieler1 {s1_p} Punkte')
+def step_impl(context, s1_p):
+     assert_that(context.player1.points, equal_to(int(s1_p)))
 
 @when('Spieler1 {s1_p} Punkte und Spieler2 0 Stiche hat')
 def step_impl(context, s1_p):
